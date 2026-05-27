@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 120s
+  scrape_timeout: 60s
+scrape_configs:
+  - job_name: prometheus
+    honor_timestamps: true
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets:
+        - prometheus:9090
+  - job_name: node
+    static_configs:
+      - targets:
+        - node_exporter:9100
+  - job_name: cadvisor
+    static_configs:
+      - targets:
+        - cadvisor:8080
+  - job_name: traefik
+    static_configs:
+      - targets:
+        - traefik:8082
+  - job_name: anubis
+    static_configs:
+      - targets:
+        - anubis_anti_bot:10000

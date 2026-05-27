@@ -1,0 +1,32 @@
+services:
+  tracking:
+    image: ghcr.io/umami-software/umami:postgresql-v2.20.2
+    environment:
+      # UPDATE WITH PASSWORD
+      DATABASE_URL: postgres://umami:<GET FROM 'secrets/umami_db_password'>@postgres_db:5432/umami
+    networks:
+      - traefik-public
+      - postgres-private
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        delay: 10s
+      labels:
+        - traefik.enable=true
+        - traefik.constraint-label=traefik-public
+        # EXAMPLE: - traefik.http.routers.umami.rule=Host(`alliance-umami.dhil.lib.sfu.ca`)
+        - traefik.http.routers.umami.rule=Host(`<YOUR UMAMI_DOMAIN>`)
+        - traefik.http.routers.umami.entrypoints=https_443
+        - traefik.http.routers.umami.service=umami
+        - traefik.http.services.umami.loadbalancer.server.port=3000
+secrets:
+  umami_admin_password:
+    file: ./secrets/umami_admin_password
+  umami_db_password:
+    file: ./secrets/umami_db_password
+networks:
+  postgres-private:
+    external: true
+  traefik-public:
+    external: true

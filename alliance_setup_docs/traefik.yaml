@@ -1,0 +1,90 @@
+# See: https://dockerswarm.rocks/traefik/
+# Also See: https://gist.github.com/coltenkrauter/124ec31d616fa4c0dcf25d79462a6237
+services:
+  proxy:
+    image: traefik:v3.6
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+        protocol: tcp
+      - target: 443
+        published: 443
+        mode: host
+        protocol: tcp
+    deploy:
+      mode: global
+      update_config:
+        order: start-first
+        delay: 10s
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        - traefik.constraint-label=traefik-public
+        - traefik.http.services.traefik-public.loadbalancer.server.port=8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # persistence
+      - /mnt/docker-swarm-persistence/traefik/acme.json:/acme.json
+    configs:
+      - source: umami_yaml
+        target: /dynamic_configs/umami.yaml
+    command:
+      # - --log.level=DEBUG
+      - --providers.swarm
+      - --providers.swarm.network=traefik-public
+      - --providers.swarm.constraints=Label(`traefik.constraint-label`, `traefik-public`)
+      - --providers.swarm.exposedByDefault=false
+      - --providers.file.directory=/dynamic_configs
+      - --entrypoints.http_80.address=:80
+      - --entrypoints.http_80.http.redirections.entrypoint.to=https_443
+      - --entryPoints.http_80.http.redirections.entrypoint.scheme=https
+      - --entrypoints.https_443.address=:443
+      - --entrypoints.https_443.asDefault=true
+      - --entrypoints.https_443.http.tls.certresolver=letsencrypt
+      - --accesslog
+      - --accesslog.fields.defaultmode=keep
+      - --accesslog.fields.names.ClientUsername=drop
+      - --accesslog.fields.headers.defaultmode=keep
+      - --accesslog.fields.headers.names.User-Agent=keep
+      - --accesslog.fields.headers.names.Authorization=drop
+      - --accesslog.fields.headers.names.Content-Type=keep
+      - --log
+      - --api
+
+      # handle sfu load balancer health checks
+      - --ping=true
+      - --ping.manualrouting=true
+
+      # Traefik log level analytics via Umami
+      - --experimental.plugins.umami-feeder.modulename=github.com/astappiev/traefik-umami-feeder
+      - --experimental.plugins.umami-feeder.version=v1.4.1
+
+      # letsencrypt settings
+      - --certificatesresolvers.letsencrypt.acme.caserver=https://acme-v02.api.letsencrypt.org/directory
+      # - --certificatesresolvers.letsencrypt.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+      # EXAMPLE: - --certificatesresolvers.letsencrypt.acme.email=dhil@sfu.ca
+      - --certificatesresolvers.letsencrypt.acme.email=<YOUR ADMIN_EMAIL>
+      - --certificatesresolvers.letsencrypt.acme.storage=/acme.json
+
+      # metrics
+      - --metrics.prometheus=true
+      - --metrics.prometheus.buckets=0.1,0.3,1.2,5.0
+      - --metrics.prometheus.addEntryPointsLabels=true
+      - --metrics.prometheus.addrouterslabels=true
+      - --metrics.prometheus.addServicesLabels=true
+      # - --metrics.prometheus.headerlabels.useragent=User-Agent
+      - --entryPoints.metrics.address=:8082
+      - --metrics.prometheus.entryPoint=metrics
+    networks:
+      - traefik-public
+      - monitoring-private
+configs:
+  umami_yaml:
+    file: ./config/umami.yaml
+networks:
+  monitoring-private:
+    external: true
+  traefik-public:
+    external: true

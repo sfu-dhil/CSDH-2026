@@ -1,0 +1,43 @@
+services:
+  anti_bot:
+    image: ghcr.io/techarohq/anubis:v1.23.1
+    environment:
+      BIND: :8080
+      METRICS_BIND: :10000
+      TARGET: " "
+      # EXAMPLE: REDIRECT_DOMAINS: "*.dhil.lib.sfu.ca,grassrootschinesehistory.ca"
+      REDIRECT_DOMAINS: "<YOUR_WILDCARD_DOMAIN OR JENKINS_DOMAINS>"
+      # EXAMPLE: PUBLIC_URL: https://alliance-anubis.dhil.lib.sfu.ca
+      PUBLIC_URL: <YOUR ANUBIS_DOMAIN>
+      COOKIE_DYNAMIC_DOMAIN: "true"
+      POLICY_FNAME: /data/cfg/botPolicy.yaml
+    configs:
+      - source: anubis_yaml
+        target: /data/cfg/botPolicy.yaml
+    networks:
+      - traefik-public
+      - monitoring-private
+    deploy:
+      replicas: 1
+      update_config:
+        order: start-first
+        delay: 10s
+      labels:
+        - traefik.enable=true
+        - traefik.constraint-label=traefik-public
+        # EXAMPLE: - traefik.http.routers.anubis.rule=Host(`alliance-anubis.dhil.lib.sfu.ca`)
+        - traefik.http.routers.anubis.rule=Host(`<YOUR ANUBIS_DOMAIN>`)
+        - traefik.http.routers.anubis.entrypoints=https_443
+        - traefik.http.routers.anubis.service=anubis
+        - traefik.http.services.anubis.loadbalancer.server.port=8080
+
+        # Anubis middleware (use in anubis protected apps)
+        - traefik.http.middlewares.anubis.forwardAuth.address=http://anubis_anti_bot:8080/.within.website/x/cmd/anubis/api/check
+configs:
+  anubis_yaml:
+    file: ./config/anubis.yaml
+networks:
+  monitoring-private:
+    external: true
+  traefik-public:
+    external: true

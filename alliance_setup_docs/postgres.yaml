@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:18.4
+    volumes:
+      # persistence
+      - /mnt/docker-swarm-persistence/postgres-data:/var/lib/postgresql
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_root_password
+    secrets:
+      - postgres_root_password
+    networks:
+      - postgres-private
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=false
+secrets:
+  postgres_root_password:
+    file: ./secrets/postgres_root_password
+networks:
+  postgres-private:
+    external: true

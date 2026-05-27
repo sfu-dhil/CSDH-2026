@@ -1,0 +1,23 @@
+# See: https://dockerswarm.rocks/traefik/
+# Also See: https://gist.github.com/coltenkrauter/124ec31d616fa4c0dcf25d79462a6237
+services:
+  mail:
+    image: boky/postfix:v4.4.0
+    deploy:
+      replicas: 1
+      update_config:
+        order: stop-first
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=false
+    environment:
+      HOSTNAME: smtp_mail
+      # EXAMPLE: ALLOWED_SENDER_DOMAINS: sfu.ca grassrootschinesehistory.ca localhost
+      ALLOWED_SENDER_DOMAINS: <YOUR ALLOWED DOMAINS>
+    networks:
+      - smtp-private
+networks:
+  smtp-private:
+    external: true

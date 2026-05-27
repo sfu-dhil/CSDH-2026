@@ -1,0 +1,38 @@
+services:
+  app:
+    image: ghcr.io/sfu-dhil/jenkins:v2.555.2
+    user: "jenkins:<YOUR DOCKER_GROUP_ID>"
+    volumes:
+      # docker socket for jobs
+      - /var/run/docker.sock:/var/run/docker.sock
+      # persistence
+      - /mnt/docker-swarm-persistence/jenkins-home:/var/jenkins_home
+    environment:
+      JAVA_OPTS: >-
+        -Dorg.apache.commons.jelly.tags.fmt.timeZone=America/Vancouver
+        -Dhudson.model.DirectoryBrowserSupport.CSP="default-src 'self' *.sfu.ca; style-src-elem * 'unsafe-inline'; font-src *; img-src * data:; script-src 'self' 'unsafe-inline' 'unsafe-hashes'; style-src 'self' 'unsafe-inline' data:"
+    networks:
+      - smtp-private
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      replicas: 1
+      update_config:
+        parallelism: 2
+        delay: 10s
+      labels:
+        - traefik.enable=true
+        - traefik.constraint-label=traefik-public
+        # EXAMPLE: traefik.http.routers.jenkins.rule=Host(`alliance-jenkins.dhil.lib.sfu.ca`)
+        - traefik.http.routers.jenkins.rule=Host(`<YOUR JENKINS_DOMAIN`)
+        - traefik.http.routers.jenkins.entrypoints=https_443
+        - traefik.http.routers.jenkins.service=jenkins
+        - traefik.http.routers.jenkins.middlewares=anubis,umami-tracking-middleware@file
+        - traefik.http.services.jenkins.loadbalancer.server.port=8080
+networks:
+  traefik-public:
+    external: true
+  smtp-private:
+    external: true
