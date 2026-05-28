@@ -1,6 +1,6 @@
 # Example Alliance Setup
 
-These instructions will setup you up with:
+These instructions will set you up with:
 - 1 Fedora instance
 - 2 Volumes (50GB for OS, 350GB for persistent storage)
 - Network open to HTTP, HTTPS, and SSH
@@ -13,11 +13,12 @@ Along with Docker running in swarm mode with these containers:
 - [Anubis](https://github.com/techarohq/anubis/pkgs/container/anubis) for simple anti-bot/AI scrapping
 - [Postfix](https://hub.docker.com/r/boky/postfix) for a simple send mail SMTP server
 - [Umami](https://github.com/umami-software/umami/pkgs/container/umami) for log level web traffic tracking (along with [Postgres](https://hub.docker.com/_/postgres))
-> Note the jenkins is a slightly modified from default with plugins and DinD (Docker in Docker) support for running jobs.
+> [!NOTE]
+> The Jenkins instance here is slightly modified from default with plugins and DinD (Docker in Docker) support for running jobs.
 
 Assuming you are starting with:
 - No Floating IPs, Volumes, or Instances
-- You have a wildcard or multiple domains to point at the alliance server applications
+- You have a wildcard or multiple domains to point at the Alliance server applications
 
 ## Arbutus Cloud Setup
 
@@ -39,7 +40,8 @@ Assuming you are starting with:
 	1. `Ingress` + `IPv4` + `TCP` + `22 (SSH)` + `0.0.0.0/0`
 	1. `Ingress` + `IPv4` + `TCP` + `80 (HTTP)` + `0.0.0.0/0`
 	1. `Ingress` + `IPv4` + `TCP` + `443 (HTTPS)` + `0.0.0.0/0`
->Note: this allows anyone to access http/https. It also easily allows all developers to SSH regardless of network (home, work, etc) BUT can be a security concern if any SSH keys are lost/misused/cracked.
+>[!WARNING]
+> This allows anyone to access http/https. It also easily allows all developers to SSH regardless of network (home, work, etc), but can be a security concern if any SSH keys are lost/misused/cracked.
 
 ### Create default fedora KeyPair
 
@@ -51,7 +53,8 @@ Assuming you are starting with:
 
 Store the automatically generated `alliance.pem` in a secure place
 Also use it locally by storing it in your home .ssh directory (`~/.ssh/alliance.pem`) for later ssh into the `fedora` user
->Note: make sure to `chmod 400 ~/.ssh/alliance.pem` if you have permissions issues with it
+> [!NOTE]
+> If you encounter permission issues, make sure to `chmod 400 ~/.ssh/alliance.pem`
 
 
 ### Create Instance
@@ -88,7 +91,8 @@ Also use it locally by storing it in your home .ssh directory (`~/.ssh/alliance.
 
 Attach the Persistence Volume to Instance
 
->Note: may need to wait until the instance if fully setup (may take a few minutes)
+> [!NOTE]
+> You may need to wait until the instance is fully setup (may take a few minutes) before being able to attach the persistence volume
 
 1. Go to `Volumes` -> `Volumes`
 1. Click the `alliance_persistence` row's dropdown `▼` under the *Actions* column -> `Manage Attachments`
@@ -111,6 +115,7 @@ Go to `Network` -> `Floating IPs` and copy the IP Address for the Generated Floa
 
 DNS settings should be `A` records pointing to the floating IP Address.
 
+> [!NOTE]
 > Example: `alliance-jenkins.dhil.lib.sfu.ca` and `grassrootschinesehistory.ca` point to `<YOUR FLOATING POINT IP ADDRESS>` for the DHIL.
 
 
@@ -153,11 +158,13 @@ sudo systemctl enable --now docker
 ```shell
 sudo usermod -aG docker fedora
 ```
-> NOTE: Docker group permissions should be enough to manage dockerized projects without using sudo in general
+> [!NOTE]
+> In general, Docker group permissions should be enough to manage dockerized projects without using `sudo`
 
 ### Formatting the Persistence Volume
 
-*SKIP IF THE VOLUME WAS PREVIOUSLY IN USE*
+> [!IMPORTANT]
+> *SKIP IF THE VOLUME WAS PREVIOUSLY IN USE*
 
 ```shell
 sudo fdisk /dev/vdb
